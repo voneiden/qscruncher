@@ -1,0 +1,51 @@
+[build-system]
+requires = [
+    "setuptools>=45",
+    "setuptools_scm[toml]>=6.2",
+    "wheel",
+    "setuptools-git-versioning<2"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qscruncher"
+authors = [
+    {name = "Matti Eiden", email = "snaipperi@gmail.com"},
+]
+description = "QuerySet Cruncher - Fast conversion of Django QuerySet's into dictionaries"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["queryset", "serializer"]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+dynamic = ["version"]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/voneiden/qscruncher/issues/"
+"Documentation" = "https://github.com/voneiden/qscruncher/"
+"Source Code" = "https://github.com/voneiden/qscruncher/"
+
+[tool.setuptools-git-versioning]
+enabled = true
+dev_template = "{tag}.post{ccount}"
+
+
+[tool.pytest.ini_options]
+addopts = "-p no:cacheprovider"
+pythonpath = [
+    "src",
+    "tests/django_test_project"
+]
+DJANGO_SETTINGS_MODULE = "django_test_project.settings"
+python_files = "tests.py test_*.py *_tests.py"
+
+[tool.flake8]
+max-line-length = 100
+
+[tool.isort]
+profile = "black"
