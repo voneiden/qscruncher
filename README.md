@@ -15,3 +15,11 @@ is not cached. In production, it's a bit more forgiving and will issue only a wa
 ## Serializer overhead
 
 qscruncher tries to be quick while doing minimal amount of introspection.
+
+
+## Configuration
+
+* `QSCRUNCHER_UNCACHED_RELATION_SIGNAL)` - An optional 
+ django signal handler that is triggered if an uncached relation is encountered with a `msg` keyword.
+* `QSCRUNCHER_UNCACHED_RELATION_NO_WARN` - Set to `True` to disable warning logging
+* `QSCRUNCHER_UNCACHED_RELATION_NO_RAISE` - Set to `True` to disable raising exceptions

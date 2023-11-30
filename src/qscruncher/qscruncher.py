@@ -2,6 +2,7 @@ import logging
 from functools import lru_cache
 from typing import Any, Callable, Optional, Type, Union
 
+from django.conf import settings
 from django.db.models import (
     Field,
     ForeignKey,
@@ -28,10 +29,15 @@ def raise_uncached_relation_error(msg):
 
 
 def handle_uncached_relation(msg):
-    logger.warning(msg)
+    signal = getattr(settings, "QSCRUNCHER_UNCACHED_RELATION_SIGNAL", None)
+    if signal:
+        signal.send(None, msg=msg)
 
-    # TODO use settings?
-    assert raise_uncached_relation_error(msg)
+    if not getattr(settings, "QSCRUNCHER_UNCACHED_RELATION_NO_WARN", False):
+        logger.warning(msg)
+
+    if not getattr(settings, "QSCRUNCHER_UNCACHED_RELATION_NO_RAISE", False):
+        raise_uncached_relation_error(msg)
 
 
 def single_relation(transforms: list[InstanceTransform]) -> FieldTransform:
@@ -152,7 +158,6 @@ def exclude(exclude_names: list[str], **kwargs: FieldTransform) -> InstanceTrans
 
 def pk() -> InstanceTransform:
     def transform(instance: Model, _):
-        # TODO instance.pk is "slow", cache the PK for model
         return instance.pk
 
     return transform
