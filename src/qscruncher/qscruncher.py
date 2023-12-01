@@ -137,8 +137,8 @@ def fields(names: List[str], **kwargs: FieldTransform) -> InstanceTransform:
 
 def exclude(exclude_names: List[str], **kwargs: FieldTransform) -> InstanceTransform:
     for key in kwargs.keys():
-        if key not in exclude_names:
-            exclude_names.append(key)
+        if key in exclude_names:
+            raise ValueError(f"{key} is excluded!")
 
     def transform(instance: Model, data: Value):
         _model_fields = model_fields(instance._meta.model)
