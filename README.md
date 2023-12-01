@@ -16,6 +16,10 @@ is not cached. In production, it's a bit more forgiving and will issue only a wa
 
 qscruncher tries to be quick while doing minimal amount of introspection.
 
+## Supported versions
+Python 3.8+ and Django 3.2.0+. Check the 
+[test matrix](https://github.com/voneiden/qscruncher/blob/main/.github/workflows/test.yml#L21-L22)
+to see what is being tested automatically. Django 2 is not compatible. 
 
 ## Configuration
 
