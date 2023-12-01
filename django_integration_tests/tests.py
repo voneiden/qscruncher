@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import pytest
 from django_test_app.models import (
     RelatedManyToManyModel,
@@ -147,11 +149,35 @@ def test_select_kwargs(cached_instance_with_foreign_key):
 
 
 @pytest.mark.django_db
-def test_single_relation_no_cache():
+def test_fields_kwargs_only(cached_instance_with_foreign_key):
+    result = {}
+    fields([], foreign_key=single_relation([fields(["id"])]))(
+        cached_instance_with_foreign_key, result
+    )
+    assert result == {
+        "foreign_key": {"id": cached_instance_with_foreign_key.foreign_key.id}
+    }
+
+
+@pytest.mark.django_db
+def test_exclude_with_invalid_kwarg(cached_instance_with_foreign_key):
+    result = {}
+    with pytest.raises(ValueError):
+        exclude(["foreign_key"], foreign_key=single_relation([fields(["id"])]))(
+            cached_instance_with_foreign_key, result
+        )
+
+
+@pytest.mark.django_db
+def test_single_relation_no_cache(settings):
+    signal = Mock()
+    settings.QSCRUNCHER_UNCACHED_RELATION_SIGNAL = signal
     instance = TestModelFactory()
     result = {}
     with pytest.raises(UncachedRelationError):
         single_relation([fields(["foreign_key"])])(instance, "foreign_key", result)
+
+    signal.send.assert_called()
 
 
 @pytest.mark.django_db
