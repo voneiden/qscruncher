@@ -13,7 +13,10 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  test:
+    env:
+      coverage_python_version: "3.11"
+      coverage_django_version: "4.2.0"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -37,3 +40,13 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
+      - name: Generate Report
+        if: ${{ matrix.python_version == env.coverage_python_version && matrix.django_version == env.coverage_django_version }}
+        run: |
+          pip install coverage
+          coverage run -m pytest
+      - name: Upload Coverage to Codecov
+        if: ${{ matrix.python_version == env.coverage_python_version && matrix.django_version == env.coverage_django_version }}
+        uses: codecov/codecov-action@v2
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
