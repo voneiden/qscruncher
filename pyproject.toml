@@ -39,7 +39,7 @@ dev_template = "{tag}.post{ccount}"
 addopts = "-p no:cacheprovider"
 pythonpath = [
     "src",
-    "tests/django_test_project"
+    "django_integration_tests/django_test_project"
 ]
 DJANGO_SETTINGS_MODULE = "django_test_project.settings"
 python_files = "tests.py test_*.py *_tests.py"
