@@ -29,8 +29,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install django==${{matrix.django_version}} 
-          pip install -r requirements-dev.txt
+          pip install pip-tools
+          echo "django==${{matrix.django_version}}" > requirements.txt
+          pip-compile requirements-dev.in
+          pip install -r requirements.txt -r requirements-dev.txt
       - name: Test with pytest
         run: |
           pytest

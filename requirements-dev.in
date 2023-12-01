@@ -1,4 +1,7 @@
+-c requirements.txt
+
+coverage
+djangorestframework
 factory-boy
 pytest
 pytest-django
-coverage
