@@ -234,7 +234,7 @@ def test_django():
 
 
 @pytest.mark.django_db
-# @pytest.mark.skip(reason="only for perf testing")
+@pytest.mark.skip(reason="only for perf testing")
 def test_perf():
     test_model = TestModelFactory()
     m2m_models = [RelatedManyToManyFactory() for _ in range(1000)]
