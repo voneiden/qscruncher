@@ -1,6 +1,6 @@
 import logging
 from functools import lru_cache
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Type, Union, List
 
 from django.conf import settings
 from django.db.models import (
@@ -40,7 +40,7 @@ def handle_uncached_relation(msg):
         raise_uncached_relation_error(msg)
 
 
-def single_relation(transforms: list[InstanceTransform]) -> FieldTransform:
+def single_relation(transforms: List[InstanceTransform]) -> FieldTransform:
     def transform(instance: Model, name: str, data: dict):
         if not getattr(instance._meta.model, name).is_cached(instance):
             # TODO check that this works with prefetch_related?
@@ -53,7 +53,7 @@ def single_relation(transforms: list[InstanceTransform]) -> FieldTransform:
     return transform
 
 
-def many_relations(transforms: list[InstanceTransform]) -> FieldTransform:
+def many_relations(transforms: List[InstanceTransform]) -> FieldTransform:
     def transform(instance: Model, name: str, data: dict):
         if name not in getattr(instance, "_prefetched_objects_cache", []):
             handle_uncached_relation(f"Field {name} is missing prefetch_related")
@@ -67,7 +67,7 @@ def many_relations(transforms: list[InstanceTransform]) -> FieldTransform:
 
 
 def _select_fields(
-    instance: Model, fields: list[Field], data: Value, **kwargs: FieldTransform
+    instance: Model, fields: List[Field], data: Value, **kwargs: FieldTransform
 ) -> Value:
     for field in fields:
         if field.name in kwargs:
@@ -118,7 +118,7 @@ def model_serializer_fields(
     raise ValueError("No fields or exclude found in ModelSerializer")
 
 
-def fields(names: list[str], **kwargs: FieldTransform) -> InstanceTransform:
+def fields(names: List[str], **kwargs: FieldTransform) -> InstanceTransform:
     for key in kwargs.keys():
         if key not in names:
             names.append(key)
@@ -135,7 +135,7 @@ def fields(names: list[str], **kwargs: FieldTransform) -> InstanceTransform:
     return transform
 
 
-def exclude(exclude_names: list[str], **kwargs: FieldTransform) -> InstanceTransform:
+def exclude(exclude_names: List[str], **kwargs: FieldTransform) -> InstanceTransform:
     for key in kwargs.keys():
         if key not in exclude_names:
             exclude_names.append(key)
@@ -164,7 +164,7 @@ def pk() -> InstanceTransform:
 
 
 def instance_to_value(
-    instance: Optional[Model], transforms: list[InstanceTransform]
+    instance: Optional[Model], transforms: List[InstanceTransform]
 ) -> Any:
     if instance is None:
         return None
@@ -175,5 +175,5 @@ def instance_to_value(
     return data
 
 
-def qs_to_list(qs: QuerySet, transforms: list[InstanceTransform]):
+def qs_to_list(qs: QuerySet, transforms: List[InstanceTransform]):
     return [instance_to_value(instance, transforms) for instance in qs]
