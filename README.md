@@ -1,5 +1,7 @@
 # Crunch those QuerySets
 
+[![codecov](https://codecov.io/gh/voneiden/qscruncher/graph/badge.svg?token=X51NG1GL1O)](https://codecov.io/gh/voneiden/qscruncher)
+
 qscruncher aims to solve two common issues causing performance bottlenecks:
 
 * Missing select_related / prefetch_related
