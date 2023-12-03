@@ -1,6 +1,6 @@
 import logging
 from functools import lru_cache
-from typing import Any, Callable, Optional, Type, Union, List
+from typing import Any, Callable, Iterable, List, Optional, Type, Union
 
 from django.conf import settings
 from django.db.models import (
@@ -40,7 +40,7 @@ def handle_uncached_relation(msg):
         raise_uncached_relation_error(msg)
 
 
-def single_relation(transforms: List[InstanceTransform]) -> FieldTransform:
+def ref(transforms: Iterable[InstanceTransform]) -> FieldTransform:
     def transform(instance: Model, name: str, data: dict):
         if not getattr(instance._meta.model, name).is_cached(instance):
             # TODO check that this works with prefetch_related?
@@ -53,7 +53,7 @@ def single_relation(transforms: List[InstanceTransform]) -> FieldTransform:
     return transform
 
 
-def many_relations(transforms: List[InstanceTransform]) -> FieldTransform:
+def refs(transforms: Iterable[InstanceTransform]) -> FieldTransform:
     def transform(instance: Model, name: str, data: dict):
         if name not in getattr(instance, "_prefetched_objects_cache", []):
             handle_uncached_relation(f"Field {name} is missing prefetch_related")
@@ -75,11 +75,11 @@ def _select_fields(
             kwargs[field.name](instance, field.name, data)
 
         elif isinstance(field, ForeignKey) or isinstance(field, OneToOneField):
-            single_relation([pk()])(instance, field.name, data)
+            ref([pk()])(instance, field.name, data)
         elif isinstance(field, ManyToManyField):
-            many_relations([pk()])(instance, field.name, data)
+            refs([pk()])(instance, field.name, data)
         elif isinstance(field, ManyToOneRel):
-            many_relations([pk()])(instance, field.get_accessor_name(), data)
+            refs([pk()])(instance, field.get_accessor_name(), data)
         else:
             data[field.name] = getattr(instance, field.name)
 
@@ -118,16 +118,16 @@ def model_serializer_fields(
     raise ValueError("No fields or exclude found in ModelSerializer")
 
 
-def fields(names: List[str], **kwargs: FieldTransform) -> InstanceTransform:
-    for key in kwargs.keys():
-        if key not in names:
-            names.append(key)
+def fields(names: Iterable[str], **kwargs: FieldTransform) -> InstanceTransform:
+    extended_names = []
+    extended_names.extend(names)
+    extended_names.extend([k for k in kwargs.keys() if k not in names])
 
     def transform(instance: Model, data: Value):
         _model_fields = model_fields(instance._meta.model)
         return _select_fields(
             instance,
-            [_model_fields[name] for name in names],
+            [_model_fields[name] for name in extended_names],
             data,
             **kwargs,
         )
@@ -135,7 +135,9 @@ def fields(names: List[str], **kwargs: FieldTransform) -> InstanceTransform:
     return transform
 
 
-def exclude(exclude_names: List[str], **kwargs: FieldTransform) -> InstanceTransform:
+def exclude(
+    exclude_names: Iterable[str], **kwargs: FieldTransform
+) -> InstanceTransform:
     for key in kwargs.keys():
         if key in exclude_names:
             raise ValueError(f"{key} is excluded!")
@@ -164,7 +166,7 @@ def pk() -> InstanceTransform:
 
 
 def instance_to_value(
-    instance: Optional[Model], transforms: List[InstanceTransform]
+    instance: Optional[Model], transforms: Iterable[InstanceTransform]
 ) -> Any:
     if instance is None:
         return None
@@ -175,5 +177,5 @@ def instance_to_value(
     return data
 
 
-def qs_to_list(qs: QuerySet, transforms: List[InstanceTransform]):
+def qs_to_list(qs: QuerySet, transforms: Iterable[InstanceTransform]):
     return [instance_to_value(instance, transforms) for instance in qs]

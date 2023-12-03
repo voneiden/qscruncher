@@ -12,18 +12,16 @@ from factory.django import DjangoModelFactory
 from rest_framework.serializers import ModelSerializer
 
 from qscruncher import (
+    UncachedRelationError,
     all_fields,
+    exclude,
     fields,
     instance_to_value,
-    qs_to_list,
-    single_relation,
-)
-from qscruncher.qscruncher import (
-    UncachedRelationError,
-    exclude,
-    many_relations,
     model_serializer_fields,
     pk,
+    qs_to_list,
+    ref,
+    refs,
 )
 
 
@@ -56,7 +54,7 @@ class RelatedManyToManyFactory(DjangoModelFactory):
 def test_fields():
     instance = TestModelFactory()
     result = {}
-    fields(["id"])(instance, result)
+    fields("id")(instance, result)
     assert result == {"id": instance.id}
 
 
@@ -92,7 +90,7 @@ def cached_instance_with_foreign_key():
 @pytest.mark.django_db
 def test_exclude(cached_instance):
     result = {}
-    exclude(["id"])(cached_instance, result)
+    exclude("id")(cached_instance, result)
     assert len(result) > 0
     assert "id" not in result
 
@@ -112,7 +110,7 @@ def test_model_serializer_fields(cached_instance):
             fields = ("id", "foreign_key")
 
     assert model_serializer_fields(TestModelSerializer)(cached_instance, {}) == fields(
-        ["id", "foreign_key"]
+        "id", "foreign_key"
     )(cached_instance, {})
 
 
@@ -123,7 +121,7 @@ def test_model_serializer_exclude(cached_instance):
             exclude = ("id", "foreign_key")
 
     assert model_serializer_fields(TestModelSerializer)(cached_instance, {}) == exclude(
-        ["id", "foreign_key"]
+        "id", "foreign_key"
     )(cached_instance, {})
 
 
@@ -139,9 +137,7 @@ def test_model_serializer_meta_missing():
 @pytest.mark.django_db
 def test_select_kwargs(cached_instance_with_foreign_key):
     result = {}
-    all_fields(foreign_key=single_relation([fields(["id"])]))(
-        cached_instance_with_foreign_key, result
-    )
+    all_fields(foreign_key=ref(fields("id")))(cached_instance_with_foreign_key, result)
     assert result["foreign_key"] == {
         "id": cached_instance_with_foreign_key.foreign_key.id
     }
@@ -151,9 +147,7 @@ def test_select_kwargs(cached_instance_with_foreign_key):
 @pytest.mark.django_db
 def test_fields_kwargs_only(cached_instance_with_foreign_key):
     result = {}
-    fields([], foreign_key=single_relation([fields(["id"])]))(
-        cached_instance_with_foreign_key, result
-    )
+    fields(foreign_key=ref(fields("id")))(cached_instance_with_foreign_key, result)
     assert result == {
         "foreign_key": {"id": cached_instance_with_foreign_key.foreign_key.id}
     }
@@ -163,7 +157,7 @@ def test_fields_kwargs_only(cached_instance_with_foreign_key):
 def test_exclude_with_invalid_kwarg(cached_instance_with_foreign_key):
     result = {}
     with pytest.raises(ValueError):
-        exclude(["foreign_key"], foreign_key=single_relation([fields(["id"])]))(
+        exclude("foreign_key", foreign_key=ref(fields("id")))(
             cached_instance_with_foreign_key, result
         )
 
@@ -175,7 +169,7 @@ def test_single_relation_no_cache(settings):
     instance = TestModelFactory()
     result = {}
     with pytest.raises(UncachedRelationError):
-        single_relation([fields(["foreign_key"])])(instance, "foreign_key", result)
+        ref(fields("foreign_key"))(instance, "foreign_key", result)
 
     signal.send.assert_called()
 
@@ -185,7 +179,7 @@ def test_single_relation_select_related():
     TestModelFactory()
     instance = TestModel.objects.all().select_related("foreign_key")[0]
     result = {}
-    single_relation([fields(["foreign_key"])])(instance, "foreign_key", result)
+    ref(fields("foreign_key"))(instance, "foreign_key", result)
     assert "foreign_key" in result
     assert result["foreign_key"] is None
 
@@ -195,7 +189,7 @@ def test_single_relation_prefetch_related():
     TestModelFactory()
     instance = TestModel.objects.all().prefetch_related("foreign_key")[0]
     result = {}
-    single_relation([fields(["foreign_key"])])(instance, "foreign_key", result)
+    ref(fields("foreign_key"))(instance, "foreign_key", result)
     assert "foreign_key" in result
     assert result["foreign_key"] is None
 
@@ -205,9 +199,7 @@ def test_many_relations_no_cache():
     instance = TestModelFactory()
     result = {}
     with pytest.raises(UncachedRelationError):
-        many_relations([fields(["many_to_many_field"])])(
-            instance, "many_to_many_field", result
-        )
+        refs(fields("many_to_many_field"))(instance, "many_to_many_field", result)
 
 
 @pytest.mark.django_db
@@ -215,9 +207,7 @@ def test_many_relations_prefetch_related():
     TestModelFactory()
     instance = TestModel.objects.all().prefetch_related("many_to_many_field")[0]
     result = {}
-    many_relations([fields(["many_to_many_field"])])(
-        instance, "many_to_many_field", result
-    )
+    refs(fields("many_to_many_field"))(instance, "many_to_many_field", result)
     assert "many_to_many_field" in result
     assert result["many_to_many_field"] == []
 
@@ -240,7 +230,7 @@ def test_django():
         TestModel.objects.all()
         .select_related("foreign_key", "one_to_one_field")
         .prefetch_related("many_to_many_field", "reversemodel_set"),
-        [all_fields()],
+        all_fields(),
     ) == [
         {
             "char_field": test_model.char_field,
@@ -289,7 +279,7 @@ def test_perf():
 
     print(
         "qs_to_list:",
-        timeit.timeit(lambda: qs_to_list(qs, [all_fields()]), number=1000),
+        timeit.timeit(lambda: qs_to_list(qs, all_fields()), number=1000),
     )
 
     print(
@@ -301,7 +291,7 @@ def test_perf():
 
     with cProfile.Profile() as pf:
         for i in range(1000):
-            qs_to_list(qs, [all_fields()])
+            qs_to_list(qs, all_fields())
     pf.print_stats("tottime")
 
 

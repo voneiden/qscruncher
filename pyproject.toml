@@ -49,3 +49,4 @@ max-line-length = 100
 
 [tool.isort]
 profile = "black"
+combine_as_imports = true
