@@ -226,27 +226,32 @@ def test_django():
     test_model = TestModelFactory()
     reverse = ReverseModel.objects.create(relation=test_model)
 
-    assert qs_to_list(
+    qs = (
         TestModel.objects.all()
         .select_related("foreign_key", "one_to_one_field")
-        .prefetch_related("many_to_many_field", "reversemodel_set"),
+        .prefetch_related("many_to_many_field", "reversemodel_set")
+    )
+    expected = {
+        "char_field": test_model.char_field,
+        "date_field": test_model.date_field,
+        "date_time_field": test_model.date_time_field,
+        "decimal_field": test_model.decimal_field,
+        "float_field": test_model.float_field,
+        "foreign_key": test_model.foreign_key,
+        "id": test_model.id,
+        "integer_field": test_model.integer_field,
+        "many_to_many_field": [],
+        "one_to_one_field": test_model.one_to_one_field,
+        "reversemodel_set": [reverse.id],
+        "text_field": test_model.text_field,
+    }
+
+    assert qs_to_list(
+        qs,
         all_fields(),
-    ) == [
-        {
-            "char_field": test_model.char_field,
-            "date_field": test_model.date_field,
-            "date_time_field": test_model.date_time_field,
-            "decimal_field": test_model.decimal_field,
-            "float_field": test_model.float_field,
-            "foreign_key": test_model.foreign_key,
-            "id": test_model.id,
-            "integer_field": test_model.integer_field,
-            "many_to_many_field": [],
-            "one_to_one_field": test_model.one_to_one_field,
-            "reversemodel_set": [reverse.id],
-            "text_field": test_model.text_field,
-        }
-    ]
+    ) == [expected]
+
+    assert instance_to_value(qs[0], all_fields()) == expected
 
 
 @pytest.mark.django_db
