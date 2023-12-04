@@ -75,7 +75,7 @@ def _select_fields(
             kwargs[field.name](instance, field.name, data)
 
         elif isinstance(field, ForeignKey) or isinstance(field, OneToOneField):
-            ref([pk()])(instance, field.name, data)
+            data[field.name] = getattr(instance, field.db_column or f"{field.name}_id")
         elif isinstance(field, ManyToManyField):
             refs([pk()])(instance, field.name, data)
         elif isinstance(field, ManyToOneRel):
